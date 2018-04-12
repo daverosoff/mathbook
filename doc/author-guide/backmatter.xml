@@ -19,6 +19,7 @@
     <xi:include href="editors.xml" />
     <xi:include href="schema-install.xml" />
     <xi:include href="git.xml" />
+    <xi:include href="compleat.xml" />
     <xi:include href="windows.xml" />
     <xi:include href="windows-wsl.xml" />
     <xi:include href="vagrant.xml" />

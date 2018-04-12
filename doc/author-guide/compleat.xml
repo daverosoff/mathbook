@@ -1,0 +1,45 @@
+<section xml:id="section-setup-for-the-compleat-beginner">
+  <title>Setup for the Compleat Beginner</title>
+  <introduction>
+    <p>There is probably no way for you to use <pretext/> without learning something.  This approach to setting up your environment tries to minimize the amount of software you have to learn and customize and get you writing as quickly as humanly possible.  It is mostly of interest to Windows users, since the tools needed are much simpler to install on Mac OS, Linux, and other Unix-based systems.  If you try the procedures described here and have suggestions, please visit us at the <c>pretext-support</c> Google group or open an issue at the <url href="https://github.com/rbeezer/mathbook/issues"><pretext/> GitHub page</url>.</p>
+  </introduction>
+  <subsection xml:id="subsection-installation">
+    <title>Installation</title>
+    <introduction>
+      <paragraphs xml:id="par-synopsis">
+        <title>Synopsis of installation procedure</title>
+        <p>You need to install three programs and do a small amount of configuring.  There are no decisions to make and you can always accept the default choices.  <alert>If you deviate from the defaults, things may not work as planned.</alert>  The ability to install with different choices will be supported in a future release of the PreTeXtual plugin.<ol>
+          <li><url href="https://www.sublimetext.com/downloads/">Install Sublime Text 3</url> (do <alert>not</alert> use the <q>portable</q> version)</li>
+          <li><p>Run Sublime Text 3 and:<ol>
+            <li>Press <c>Ctrl+`</c> (that is the <term>backtick</term>, usually right under the <c>Esc</c> key)</li>
+            <li><p>Paste the following into the console panel that opens at the bottom of the screen:<cd>
+              <cline>import urllib.request,os,hashlib; h = '6f4c264a24d933ce70df5dedcf1dcaee' + 'ebe013ee18cced0ef93d5f746d80ef60'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)</cline>
+            </cd></p></li>
+          </ol></p></li>
+          <li>After you see the success message, you will be prompted to restart Sublime Text 3.  Do so and then select Package Control from the Preferences menu.  In the panel that appears, select Install Package and enter <q>PreTeXtual</q>.</li>
+          <li><url href="https://virtualbox.org/downloads/">Install Virtualbox</url></li>
+          <li><url href="https://vagrantup.com/downloads/">Install Vagrant</url></li>
+          <li><p>Open any <term>command prompt</term>.  If you don't know what that means, press the Windows key and type <c>cmd</c>, then hit Enter.  A black window with a cursor will appear.  Do the following:<console>
+            <prompt>C:\users\YourName&gt;</prompt>
+            <input>md C:\pretext</input>
+            <prompt>C:\users\YourName&gt;</prompt>
+            <input>cd C:\pretext</input>
+            <prompt>C:\pretext&gt;</prompt>
+            <input>vagrant init daverosoff/pretext</input>
+            <output>A `Vagrantfile` has been placed in this directory. You are now ready to `vagrant up` your first virtual environment! Please read the comments in the Vagrantfile as well as documentation on `vagrantup.com` for more information on using Vagrant.</output>
+            <prompt>C:\pretext&gt;</prompt>
+            <input>vagrant up</input>
+            <output>Bringing machine 'default' up with 'virtualbox' provider...
+            ==> default: Importing base box 'daverosoff/pretext'...
+            ==> default: Matching MAC address for NAT networking...
+            ==> default: Checking if box 'daverosoff/pretext' is up to date...</output>
+          </console>A bunch more lines will appear after this and this step will take quite a while, perhaps as long as 45 minutes or an hour.  (If you perform it again later it will only take a few moments.)  Go get a snack or walk around the block. When this step finishes, exit the command prompt:<console>
+            <prompt>C:\pretext&gt;</prompt>
+            <input>exit</input>
+          </console></p></li>
+          <li>All done!</li>
+      </p>
+      </paragraphs>
+    </introduction>
+  </subsection>
+</section>
