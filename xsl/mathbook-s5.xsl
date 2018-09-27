@@ -111,8 +111,8 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 		</xsl:if>
 		<xsl:apply-templates select="frontmatter/titlepage/date" />
 	</h1>
-	<h2><xsl:apply-templates select="title" /></h2>
-	<h3><xsl:apply-templates select="subtitle" /></h3>
+	<!-- <h2><xsl:apply-templates select="title" /></h2> -->
+	<!-- <h3><xsl:apply-templates select="subtitle" /></h3> -->
 	</div>
 	</div>
 
@@ -130,6 +130,16 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 		<h2><xsl:apply-templates select="subtitle" /></h2>
 		<xsl:apply-templates select="frontmatter/titlepage/author" />
 	</div>
+</xsl:template>
+
+<xsl:template match="title">
+	<!-- <xsl:value-of select="." /> -->
+	<xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="subtitle">
+	<!-- <xsl:value-of select="." /> -->
+	<xsl:apply-templates />
 </xsl:template>
 
 <xsl:template match="author">
