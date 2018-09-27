@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<?xml-model href="file:///C:/Users/drosoff/mathbook/schema/pretext.rng"
+            schematypens="http://relaxng.org/ns/structure/1.0"?>
 
 <!--********************************************************************
 Copyright 2013 Robert A. Beezer

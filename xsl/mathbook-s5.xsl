@@ -50,6 +50,17 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>0</xsl:text>
 </xsl:variable>
 
+<!-- Fix relative level offset bug -->
+<xsl:variable name="root-level">1</xsl:variable>
+
+<!-- Fix undefined level param bugs -->
+<xsl:param name="toc.level">0</xsl:param>
+<xsl:param name="numbering.theorems.level">0</xsl:param>
+<xsl:param name="numbering.projects.level">0</xsl:param>
+<xsl:param name="numbering.equations.level">0</xsl:param>
+<xsl:param name="numbering.footnotes.level">0</xsl:param>
+<xsl:variable name="max-feasible">0</xsl:variable>
+<xsl:param name="numbering.maximum.level">0</xsl:param>
 
 <xsl:template match="slideshow">
 	<xsl:text disable-output-escaping='yes'><![CDATA[<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -93,8 +104,10 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	<div id="header"></div>
 	<div id="footer">
 	<h1>
-		<xsl:apply-templates select="frontmatter/titlepage/event" />
+		<xsl:if test="frontmatter/titlepage/event">
+			<xsl:apply-templates select="frontmatter/titlepage/event" />
 		<xsl:text>, </xsl:text>
+		</xsl:if>
 		<xsl:apply-templates select="frontmatter/titlepage/date" />
 	</h1>
 	<h2><xsl:apply-templates select="title" /></h2>
@@ -119,7 +132,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 
 <xsl:template match="author">
 	<h3><xsl:apply-templates select="personname" /></h3>
-	<h4><xsl:apply-templates select="affiliation" /></h4>
+	<h4><xsl:apply-templates select="institution" /></h4>
 </xsl:template>
 
 <xsl:template match="slide">
