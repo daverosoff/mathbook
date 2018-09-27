@@ -94,6 +94,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	<!-- Add support for MathJax -->
     <xsl:call-template name="mathjax" />
 	<!-- Add support for Sage Cells -->
+	<xsl:call-template name="jquery-sagecell"/>
 	<xsl:call-template name="makesagecell" />
 	</head>
 	<body>
