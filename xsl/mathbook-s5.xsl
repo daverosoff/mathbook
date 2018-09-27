@@ -161,6 +161,34 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	</div>
 </xsl:template>
 
+<xsl:template match="handout">
+	<xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="biblio" mode="wrapped-content">
+    <xsl:param name="b-original" select="true()" />
+    <!-- ignoring original flag at first, -->
+    <!-- nothing interior gets duplicated -->
+    <!-- <div class="bibitem"> -->
+        <!-- <xsl:text>[</xsl:text> -->
+        <!-- <xsl:apply-templates select="." mode="serial-number" /> -->
+        <!-- <xsl:text>]</xsl:text> -->
+    <!-- </div> -->
+    <!-- <xsl:text>&#xa0;&#xa0;</xsl:text> -->
+    <div class="bibentry">
+        <xsl:apply-templates select="text()|*[not(self::note)]">
+            <xsl:with-param name="b-original" select="$b-original" />
+        </xsl:apply-templates>
+    </div>
+    <xsl:if test="note">
+        <div class="knowl-container">
+            <xsl:apply-templates select="note">
+                <xsl:with-param name="b-original" select="$b-original" />
+            </xsl:apply-templates>
+        </div>
+    </xsl:if>
+</xsl:template>
+
 <!-- Height for 1024x768 target resolution -->
 <xsl:template match="embed">
 	<xsl:element name="object">
