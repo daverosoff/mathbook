@@ -71,9 +71,9 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	<!-- metadata -->
 	<meta name="generator" content="S5" />
 	<meta name="version" content="S5 1.1" />
-	<meta name="presdate" content="20050728" />
-	<meta name="author" content="Eric A. Meyer" />
-	<meta name="company" content="Complex Spiral Consulting" />
+	<meta name="presdate" content="20181003" />
+	<meta name="author" content="Dave Rosoff" />
+	<meta name="company" content="The College of Idaho" />
 	<!-- configuration parameters -->
 	<meta name="defaultView" content="slideshow" />
 	<meta name="controlVis" content="hidden" />
@@ -106,11 +106,12 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	<h1>
 		<xsl:if test="frontmatter/titlepage/event">
 			<xsl:apply-templates select="frontmatter/titlepage/event" />
-		<xsl:text>, </xsl:text>
+		<!-- <xsl:text>, </xsl:text> -->
 		</xsl:if>
 		<xsl:apply-templates select="frontmatter/titlepage/date" />
 	</h1>
 	<h2><xsl:apply-templates select="title" /></h2>
+	<h3><xsl:apply-templates select="subtitle" /></h3>
 	</div>
 	</div>
 
