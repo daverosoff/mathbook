@@ -78,7 +78,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	<meta name="defaultView" content="slideshow" />
 	<meta name="controlVis" content="hidden" />
 	<!-- style sheet links -->
-	<link rel="stylesheet" href="ui/default/slides.css" type="text/css" media="projection" id="slideProj" />
+	<link rel="stylesheet" href="ui/mitaine/slides.css" type="text/css" media="projection" id="slideProj" />
 	<link rel="stylesheet" href="ui/default/outline.css" type="text/css" media="screen" id="outlineStyle" />
 	<link rel="stylesheet" href="ui/default/print.css" type="text/css" media="print" id="slidePrint" />
 	<link rel="stylesheet" href="ui/default/opera.css" type="text/css" media="projection" id="operaFix" />
@@ -132,12 +132,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 	</div>
 </xsl:template>
 
-<xsl:template match="title">
-	<!-- <xsl:value-of select="." /> -->
-	<xsl:apply-templates />
-</xsl:template>
-
-<xsl:template match="subtitle">
+<xsl:template match="title|subtitle">
 	<!-- <xsl:value-of select="." /> -->
 	<xsl:apply-templates />
 </xsl:template>
@@ -162,7 +157,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 </xsl:template>
 
 <xsl:template match="handout">
-	<xsl:apply-templates/>
+	<xsl:apply-templates select="*"/>
 </xsl:template>
 
 <xsl:template match="biblio" mode="wrapped-content">
