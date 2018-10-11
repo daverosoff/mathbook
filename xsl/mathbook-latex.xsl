@@ -554,10 +554,20 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:if>
     <xsl:text>%%&#xa;</xsl:text>
     <xsl:text>%% Division Titles, and Page Headers/Footers&#xa;</xsl:text>
-    <!-- "explicit" is necessary to keep title implicitly following  -->
-    <!-- "before-code". "pagestyles" option is equivalent to loading -->
-    <!-- the "titleps" package and have it execute cooperatively     -->
-    <xsl:text>%% titlesec package, with titleps package&#xa;</xsl:text>
+    <!-- The final mandatory argument of the titlesec \titleformat  -->
+    <!-- command is the "before-code", meaning before the text of   -->
+    <!-- the title.  For greater flexibility, the text of the title -->
+    <!-- can be referenced *explicitly* by macro parameter #1 in    -->
+    <!-- whatever code is placed into this argument.  This is       -->
+    <!-- accomplished with the "explicit" argument.                 -->
+    <!-- In particular, the numberless, chapter-level "Index" and   -->
+    <!-- "Contents" are generated semi-automatically with a macro,  -->
+    <!-- so PTX never sees the title (but can use built-in LaTeX    -->
+    <!-- facilities to change it to another language)               -->
+    <!-- "pagestyles" option is equivalent to loading the           -->
+    <!-- "titleps" package and have it execute cooperatively        -->
+    <xsl:text>%% titlesec package, loading "titleps" package cooperatively&#xa;</xsl:text>
+    <xsl:text>%% See code comments about the necessity and purpose of "explicit" option&#xa;</xsl:text>
     <xsl:text>\usepackage[explicit, pagestyles]{titlesec}&#xa;</xsl:text>
     <xsl:variable name="empty-pagestyle">
         <xsl:apply-templates select="$document-root" mode="titleps-empty"/>
@@ -599,6 +609,72 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>}&#xa;</xsl:text>
     <!--  -->
     <xsl:text>%%&#xa;</xsl:text>
+    <!--  -->
+    <xsl:text>%% Create globally-available macros to be provided for style writers&#xa;</xsl:text>
+    <xsl:text>%% These are redefined for each occurence of each division&#xa;</xsl:text>
+    <xsl:text>\newcommand{\divisionnameptx}{\relax}%&#xa;</xsl:text>
+    <xsl:text>\newcommand{\titleptx}{\relax}%&#xa;</xsl:text>
+    <xsl:text>\newcommand{\subtitleptx}{\relax}%&#xa;</xsl:text>
+    <xsl:text>\newcommand{\shortitleptx}{\relax}%&#xa;</xsl:text>
+    <xsl:text>\newcommand{\authorsptx}{\relax}%&#xa;</xsl:text>
+    <xsl:text>\newcommand{\epigraphptx}{\relax}%&#xa;</xsl:text>
+    <!-- Create xparse enviroments for each PTX division.          -->
+    <!-- The pervasive environments need qualification so          -->
+    <!-- that the right LaTeX divisions are created.               -->
+    <!-- These look like environments like "solutions-subsection"  -->
+    <!-- We want one (and only one) of each type that is necessary -->
+    <!-- For each line below think CAREFULLY about the level       -->
+    <!-- created, it is one level below what it might appear       -->
+    <xsl:variable name="division-reps" select="
+        ($document-root//acknowledgement)[1]|
+        ($document-root//foreword)[1]|
+        ($document-root//preface)[1]|
+        ($document-root//part)[1]|
+        ($document-root//chapter)[1]|
+        ($document-root//section)[1]|
+        ($document-root//subsection)[1]|
+        ($document-root//subsubsection)[1]|
+        ($document-root//subsubsection)[1]|
+        ($root/book/backmatter/appendix|$root/article/backmatter/appendix)[1]|
+        ($document-root//index)[1]|
+        ($document-root//chapter/exercises|$root/article/exercises)[1]|
+        ($document-root//section/exercises)[1]|
+        ($document-root//subsection/exercises)[1]|
+        ($document-root//subsubsection/exercises)[1]|
+        ($root/book/backmatter/solutions)[1]|
+        ($document-root//chapter/solutions|$root/article/backmatter/solutions)[1]|
+        ($document-root//section/solutions)[1]|
+        ($document-root//subsection/solutions)[1]|
+        ($document-root//subsubsection/solutions)[1]|
+        ($document-root//chapter/worksheet|$root/article/worksheet)[1]|
+        ($document-root//section/worksheet)[1]|
+        ($document-root//subsection/worksheet)[1]|
+        ($document-root//subsubsection/worksheet)[1]|
+        ($root/book/backmatter/references)[1]|
+        ($document-root//chapter/references|$root/article/backmatter/references)[1]|
+        ($document-root//section/references)[1]|
+        ($document-root//subsection/references)[1]|
+        ($document-root//subsubsection/references)[1]"/>
+    <xsl:text>%% Create environments for possible occurences of each division&#xa;</xsl:text>
+    <xsl:for-each select="$division-reps">
+        <xsl:apply-templates select="." mode="environment"/>
+    </xsl:for-each>
+    <xsl:text>%%&#xa;</xsl:text>
+    <xsl:text>%% Styles for the traditional LaTeX divisions&#xa;</xsl:text>
+    <!-- Create five title styles, part to subsubsection -->
+    <!-- "titlesec" works on a level basis,              -->
+    <!-- so we just build all five named styles          -->
+    <!-- A specialized division of a subsubsection would -->
+    <!-- require a "paragraph" style.  We are using the  -->
+    <!-- LaTeX "subparagraph" traditional division for a -->
+    <!-- PTX "paragraphs", but perhaps we can fake that, -->
+    <!-- since we don't allow it to be styled.           -->
+    <xsl:call-template name="titlesec-part-style"/>
+    <xsl:call-template name="titlesec-chapter-style"/>
+    <xsl:call-template name="titlesec-section-style"/>
+    <xsl:call-template name="titlesec-subsection-style"/>
+    <xsl:call-template name="titlesec-subsubsection-style"/>
+    <xsl:text>%%&#xa;</xsl:text>
     <xsl:text>%% Semantic Macros&#xa;</xsl:text>
     <xsl:text>%% To preserve meaning in a LaTeX file&#xa;</xsl:text>
     <xsl:text>%% Only defined here if required in this document&#xa;</xsl:text>
@@ -618,33 +694,6 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:if test="$document-root//term">
         <xsl:text>%% Used for inline definitions of terms&#xa;</xsl:text>
         <xsl:text>\newcommand{\terminology}[1]{\textbf{#1}}&#xa;</xsl:text>
-    </xsl:if>
-    <!-- Macros for formatting per-division authors                -->
-    <!-- Large, large, normalsize, small tested for top two levels -->
-    <!-- \protect needed for xrefs converted to hyperlinks         -->
-    <!-- TODO: to get better spacing will require re-defining headings -->
-    <!-- TODO: \divisionauthors{div-name}{names}? -->
-    <xsl:if test="$document-root//chapter/author">
-        <xsl:text>\newcommand{\chapterauthors}[1]{\noindent{\Large\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-    </xsl:if>
-    <xsl:if test="$document-root//section/author">
-        <xsl:text>\newcommand{\sectionauthors}[1]{\noindent{\large\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-    </xsl:if>
-    <xsl:if test="$document-root//subsection/author">
-        <xsl:text>\newcommand{\subsectionauthors}[1]{\noindent{\normalsize\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-    </xsl:if>
-    <xsl:if test="$document-root//subsubsection/author">
-        <xsl:text>\newcommand{\subsubsectionauthors}[1]{\noindent{\small\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-    </xsl:if>
-    <xsl:if test="$document-root//appendix/author">
-        <xsl:choose>
-            <xsl:when test="$b-is-book">
-                <xsl:text>\newcommand{\appendixauthors}[1]{\noindent{\Large\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-            </xsl:when>
-            <xsl:when test="$b-is-article">
-                <xsl:text>\newcommand{\appendixauthors}[1]{\noindent{\large\textbf{\protect#1}}\par\bigskip}&#xa;</xsl:text>
-            </xsl:when>
-        </xsl:choose>
     </xsl:if>
     <!-- http://tex.stackexchange.com/questions/23711/strikethrough-text -->
     <!-- http://tex.stackexchange.com/questions/287599/thickness-for-sout-strikethrough-command-from-ulem-package -->
@@ -929,11 +978,11 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:for-each>
     <!-- INTRODUCTION, CONCLUSION (divisional) -->
     <xsl:variable name="introduction-reps" select="
-        ($document-root/../article/introduction|$document-root//chapter/introduction|$document-root//section/introduction|$document-root//subsection/introduction|$document-root//appendix/introduction|$document-root//exercises/introduction|$document-root//solutions/introduction|$document-root//worksheet/introduction|$document-root//references/introduction)[1]|
-        ($document-root/../article/conclusion|$document-root//chapter/conclusion|$document-root//section/conclusion|$document-root//subsection/conclusion|$document-root//appendix/conclusion|$document-root//exercises/conclusion|$document-root//solutions/conclusion|$document-root//worksheet/conclusion|$document-root//references/conclusion)[1]"/>
+        ($root/article/introduction|$document-root//chapter/introduction|$document-root//section/introduction|$document-root//subsection/introduction|$document-root//appendix/introduction|$document-root//exercises/introduction|$document-root//solutions/introduction|$document-root//worksheet/introduction|$document-root//references/introduction)[1]|
+        ($root/article/conclusion|$document-root//chapter/conclusion|$document-root//section/conclusion|$document-root//subsection/conclusion|$document-root//appendix/conclusion|$document-root//exercises/conclusion|$document-root//solutions/conclusion|$document-root//worksheet/conclusion|$document-root//references/conclusion)[1]"/>
     <xsl:if test="$introduction-reps">
         <xsl:text>%%&#xa;</xsl:text>
-        <xsl:text>%% tcolorbox, with styles, for introductions and conclusions of divisions&#xa;</xsl:text>
+        <xsl:text>%% xparse environments for introductions and conclusions of divisions&#xa;</xsl:text>
         <xsl:text>%%&#xa;</xsl:text>
     </xsl:if>
     <xsl:for-each select="$introduction-reps">
@@ -995,7 +1044,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
         <!-- solutions to inline exercises -->
         <xsl:if test="$document-root//exercise[not(ancestor::exercises or ancestor::worksheet)]">
         <xsl:text>%% Solutions to inline exercises, style and environment&#xa;</xsl:text>
-            <xsl:text>\tcbset{ inlineexercisesolutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, } }&#xa;</xsl:text>
+            <xsl:text>\tcbset{ inlineexercisesolutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, breakable } }&#xa;</xsl:text>
             <xsl:text>\newtcolorbox{inlineexercisesolution}[2]</xsl:text>
             <xsl:text>{inlineexercisesolutionstyle, title={</xsl:text>
             <!-- Hardcode "name" of an inline exercise in the environment -->
@@ -1004,12 +1053,29 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
             </xsl:call-template>
             <xsl:text>~#1\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
         </xsl:if>
-        <!-- solutions to division exercises -->
-        <xsl:if test="$document-root//exercises//exercise|$document-root//worksheet//exercise">
-        <xsl:text>%% Solutions to division exercises, style and environment&#xa;</xsl:text>
-            <xsl:text>\tcbset{ divisionexercisesolutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, } }&#xa;</xsl:text>
-            <xsl:text>\newtcolorbox{divisionexercisesolution}[2]</xsl:text>
-            <xsl:text>{divisionexercisesolutionstyle, title={#1.\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
+        <!-- Division Solution -->
+        <!-- Explicitly breakable, run-in title -->
+        <xsl:if test="$document-root//exercises//exercise[not(ancestor::exercisegroup)]|$document-root//worksheet//exercise[not(ancestor::exercisegroup)]">
+            <xsl:text>%% Solutions to division exercises, not in exercise group&#xa;</xsl:text>
+            <xsl:text>\tcbset{ divisionsolutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, breakable } }&#xa;</xsl:text>
+            <xsl:text>\newtcolorbox{divisionsolution}[2]</xsl:text>
+            <xsl:text>{divisionsolutionstyle, title={#1.\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
+        </xsl:if>
+        <!-- Division Solution, Exercise Group -->
+        <!-- Explicitly breakable, run-in title -->
+        <xsl:if test="$document-root//exercisegroup[not(@cols)]">
+            <xsl:text>%% Solutions to division exercises, in exercise group, no columns&#xa;</xsl:text>
+            <xsl:text>\tcbset{ divisionsolutionegstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, left skip=\egindent, breakable } }&#xa;</xsl:text>
+            <xsl:text>\newtcolorbox{divisionsolutioneg}[2]</xsl:text>
+            <xsl:text>{divisionsolutionegstyle, title={#1.\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
+        </xsl:if>
+        <!-- Division Solution, Exercise Group, Columnar -->
+        <!-- Explicity unbreakable, to behave in multicolumn tcbraster -->
+        <xsl:if test="$document-root//exercisegroup/@cols">
+            <xsl:text>%% Solutions to division exercises, in exercise group with columns&#xa;</xsl:text>
+            <xsl:text>\tcbset{ divisionsolutionegcolstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, halign=flush left, unbreakable } }&#xa;</xsl:text>
+            <xsl:text>\newtcolorbox{divisionsolutionegcol}[2]</xsl:text>
+            <xsl:text>{divisionsolutionegcolstyle, title={#1.\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
         </xsl:if>
         <!-- solutions to PROJECT-LIKE -->
         <xsl:for-each select="$project-reps">
@@ -1022,7 +1088,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
             <!-- set the style -->
             <xsl:text>\tcbset{ </xsl:text>
             <xsl:value-of select="$elt-name"/>
-            <xsl:text>solutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, } }&#xa;</xsl:text>
+            <xsl:text>solutionstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}, breakable } }&#xa;</xsl:text>
             <!-- create the environment -->
             <xsl:text>\newtcolorbox{</xsl:text>
             <xsl:value-of select="$elt-name"/>
@@ -1035,17 +1101,39 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
             <xsl:text>~#1\notblank{#2}{\space#2}{}}}&#xa;</xsl:text>
         </xsl:for-each>
     </xsl:if>
-    <!-- miscellaneous, not categorized yet -->
+    <!-- Generic exercise lead-in -->
     <xsl:if test="$document-root//exercises//exercise|$document-root//worksheet//exercise">
-        <xsl:text>%% Divisional exercises are rendered as faux list items&#xa;</xsl:text>
-        <xsl:text>%% with hard-coded numbers as arguments, not as LaTeX environments&#xa;</xsl:text>
+        <xsl:text>%% Divisional exercises (and worksheet) as LaTeX environments&#xa;</xsl:text>
         <xsl:text>%% Third argument is option for extra workspace in worksheets&#xa;</xsl:text>
-        <xsl:text>%% Always full-width, use in a side-by-side will constrain that&#xa;</xsl:text>
         <xsl:text>%% Hanging indent occupies a 5ex width slot prior to left margin&#xa;</xsl:text>
         <xsl:text>%% Experimentally this seems just barely sufficient for a bold "888."&#xa;</xsl:text>
-        <xsl:text>\tcbset{ divisionexercisestyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, left=5ex } }&#xa;</xsl:text>
+    </xsl:if>
+    <!-- Division Exercise -->
+    <!-- Numbered, styled with a hanging indent -->
+    <xsl:if test="$document-root//exercises//exercise[not(ancestor::exercisegroup)]|$document-root//worksheet//exercise[not(ancestor::exercisegroup)]">
+        <xsl:text>%% Division exercises, not in exercise group&#xa;</xsl:text>
+        <xsl:text>\tcbset{ divisionexercisestyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, left=5ex, breakable } }&#xa;</xsl:text>
         <xsl:text>\newtcolorbox{divisionexercise}[4]</xsl:text>
         <xsl:text>{divisionexercisestyle, before title={\hspace{-5ex}\makebox[5ex][l]{#1.}}, title={\notblank{#2}{#2\space}{}}, phantom={\hypertarget{#4}{}}, after={\notblank{#3}{\newline\rule{\workspacestrutwidth}{#3\textheight}\newline}{}}}&#xa;</xsl:text>
+    </xsl:if>
+    <!-- Division Exercise, Exercise Group -->
+    <!-- The exercise itself carries the indentation, hence we can use breakable -->
+    <!-- boxes and get good page breaks (as these problems could be long)        -->
+    <xsl:if test="$document-root//exercisegroup[not(@cols)]">
+        <xsl:text>%% Division exercises, in exercise group, no columns&#xa;</xsl:text>
+        <xsl:text>\tcbset{ divisionexerciseegstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, left=5ex, left skip=\egindent, breakable } }&#xa;</xsl:text>
+        <xsl:text>\newtcolorbox{divisionexerciseeg}[4]</xsl:text>
+        <xsl:text>{divisionexerciseegstyle, before title={\hspace{-5ex}\makebox[5ex][l]{#1.}}, title={\notblank{#2}{#2\space}{}}, phantom={\hypertarget{#4}{}}, after={\notblank{#3}{\newline\rule{\workspacestrutwidth}{#3\textheight}\newline}{}}}&#xa;</xsl:text>
+    </xsl:if>
+    <!-- Division Solution, Exercise Group, Columnar -->
+    <!-- Explicity unbreakable, to behave in multicolumn tcbraster -->
+    <xsl:if test="$document-root//exercisegroup/@cols">
+        <xsl:text>%% Division exercises, in exercise group with columns&#xa;</xsl:text>
+        <!-- Division Exercise, Exercise Group, Columnar -->
+        <!-- Explicity unbreakable, to behave in multicolumn tcbraster -->
+        <xsl:text>\tcbset{ divisionexerciseegcolstyle/.style={size=minimal, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, left=5ex, halign=flush left, unbreakable } }&#xa;</xsl:text>
+        <xsl:text>\newtcolorbox{divisionexerciseegcol}[4]</xsl:text>
+        <xsl:text>{divisionexerciseegcolstyle, before title={\hspace{-5ex}\makebox[5ex][l]{#1.}}, title={\notblank{#2}{#2\space}{}}, phantom={\hypertarget{#4}{}}, after={\notblank{#3}{\newline\rule{\workspacestrutwidth}{#3\textheight}\newline}{}}}&#xa;</xsl:text>
     </xsl:if>
     <xsl:if test="$document-root//exercise[@workspace]">
         <xsl:text>%% Worksheet exercises may have workspaces&#xa;</xsl:text>
@@ -1061,6 +1149,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
             </xsl:otherwise>
         </xsl:choose>
     </xsl:if>
+    <!-- miscellaneous, not categorized yet -->
     <xsl:if test="$document-root//list">
         <xsl:text>%% named list environment and style&#xa;</xsl:text>
         <xsl:text>\newtcolorbox{namedlistcontent}&#xa;</xsl:text>
@@ -1721,21 +1810,31 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:if>
     <xsl:if test="$document-root//exercisegroup">
         <xsl:text>%% Indented groups of "exercise" within an "exercises" division&#xa;</xsl:text>
-        <xsl:text>%% An "xparse" environment will represent the entire exercise&#xa;</xsl:text>
-        <xsl:text>%% group, with the number of columns as a parameter.&#xa;</xsl:text>
-        <xsl:text>%% tcolorbox styles control the exercisegroup layout&#xa;</xsl:text>
-        <xsl:text>%% Indentation is 5% of overall width&#xa;</xsl:text>
-        <xsl:text>%% Gap between exercises is 3% of overall width&#xa;</xsl:text>
-        <!-- "regular" version, indent on left -->
-        <xsl:text>\tcbset{ exgroupstyle/.style={raster equal height=rows, raster left skip=0.05\linewidth, raster column skip=0.03\linewidth} }&#xa;</xsl:text>
-        <!-- "solution" version, indent on right. Silly, but easy -->
-        <xsl:text>\tcbset{ exgroupsolutionstyle/.style={raster equal height=rows, raster right skip=0.05\linewidth, raster column skip=0.03\linewidth} }&#xa;</xsl:text>
-        <!-- raster equal height: boxes of same *row* have same height    -->
-        <!-- raster columns: controls layout, so no line separators, etc. -->
-        <xsl:text>\NewDocumentEnvironment{exercisegroup}{m}&#xa;</xsl:text>
-        <xsl:text>{\begin{tcbraster}[exgroupstyle,raster columns=#1]}{\end{tcbraster}}&#xa;</xsl:text>
-        <xsl:text>\NewDocumentEnvironment{exercisegroupsolution}{m}&#xa;</xsl:text>
-        <xsl:text>{\begin{tcbraster}[exgroupsolutionstyle,raster columns=#1]}{\end{tcbraster}}&#xa;</xsl:text>
+        <xsl:text>%% Lengths control the indentation (always) and gaps (multi-column)&#xa;</xsl:text>
+        <xsl:text>\newlength{\egindent}\setlength{\egindent}{0.05\linewidth}&#xa;</xsl:text>
+        <xsl:text>\newlength{\exggap}\setlength{\exggap}{0.05\linewidth}&#xa;</xsl:text>
+        <xsl:if test="$document-root//exercisegroup[not(@cols)]">
+            <xsl:text>%% Thin "xparse" environments will represent the entire exercise&#xa;</xsl:text>
+            <xsl:text>%% group, in the case when it does not hold multiple columns.&#xa;</xsl:text>
+            <!-- DO NOT make this a tcolorbox, since we would want it -->
+            <!-- to be breakable, and then the individual exercises   -->
+            <!-- could not be breakable tcolorbox themselves          -->
+            <!-- TODO: add some pre- spacing commands here -->
+            <xsl:text>\NewDocumentEnvironment{exercisegroup}{}&#xa;</xsl:text>
+            <xsl:text>{}{}&#xa;</xsl:text>
+        </xsl:if>
+        <xsl:if test="$document-root//exercisegroup/@cols">
+            <xsl:text>%% An exercise group with multiple columns is a tcbraster.&#xa;</xsl:text>
+            <xsl:text>%% If the contained exercises are explicitly unbreakable,&#xa;</xsl:text>
+            <xsl:text>%% the raster should break at rows for page breaks.&#xa;</xsl:text>
+            <xsl:text>%% The number of columns is a parameter, passed to tcbraster.&#xa;</xsl:text>
+            <!-- raster equal height: boxes of same *row* have same height    -->
+            <!-- raster left skip: indentation of all exercises               -->
+            <!-- raster columns: controls layout, so no line separators, etc. -->
+            <xsl:text>\tcbset{ exgroupcolstyle/.style={raster equal height=rows, raster left skip=\egindent, raster column skip=\exggap} }&#xa;</xsl:text>
+            <xsl:text>\NewDocumentEnvironment{exercisegroupcol}{m}&#xa;</xsl:text>
+            <xsl:text>{\begin{tcbraster}[exgroupcolstyle,raster columns=#1]}{\end{tcbraster}}&#xa;</xsl:text>
+        </xsl:if>
     </xsl:if>
     <xsl:if test="$document-root/backmatter/index-part | $document-root//index-list">
         <!-- See http://tex.blogoverflow.com/2012/09/dont-forget-to-run-makeindex/ for "imakeidx" usage -->
@@ -1982,17 +2081,44 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- These are not yet meant for style writer use. -->
 
 <!-- Notes: -->
-<!-- 1. Generally, all boxes should be "breakable" -->
-<!-- 2. The  etoolbox  package has some good tools -->
+<!-- 1. Generally, all boxes should be "breakable"     -->
+<!-- 2. The  etoolbox  package has some good tools     -->
+<!-- 3. Some items need a "phantom={\hypertarget{}{}}" -->
+<!--    search on mode="xref-as-ref" for more          -->
 
 <!-- Style: -->
 <!-- Provide some comments for the LaTeX source, to aid     -->
 <!-- with standalone use or debugging.  Preface with "%% ". -->
 
+<!-- We have lots of divisions, some traditional (chapters),      -->
+<!-- some one-off (preface), some pervasive (exercises).  Many    -->
+<!-- are always numbered (chapters), some are never numbered      -->
+<!-- (prefaces), some go both ways (exercises).  All get their    -->
+<!-- own environments, with two for the numbered/unnumbered.      -->
+<!-- Traditional need a suffix 'ptx' to distinguish from the      -->
+<!-- built-in LaTeX names, one-off get their own natural name,    -->
+<!-- and pervasive get a suffix that indicates their level.       -->
+<!--                                                              -->
+<!-- These environments will be defined using the LaTeX macros    -->
+<!-- which correspond to the traditional names, so as to leverage -->
+<!-- LaTeX numbering, titlesec styling, and migration of titles   -->
+<!-- to running heads via the cooperating titleps package.  But   -->
+<!-- the environments will also be enhanced through the titlesec  -->
+<!-- package to allow the seamless addition of authors and        -->
+<!-- epigraphs, in addition to actual styling.                    -->
+
 <!-- "introduction", "conclusion" -->
-<!-- Body:  \begin{outcomes}{m:title}        -->
-<!-- Divisional, want to obsolete title soon -->
+<!-- Body:  \begin{outcomes}{title}              -->
+<!-- Divisional, want to obsolete title soon     -->
+<!-- Simple, w/ temporary run-in title, no label -->
 <!-- (so don't merge with other titled environments) -->
+
+<!-- NB: Once upon a time, this was a breakable tcolorbox.  But then if   -->
+<!-- the contents were too complicated, then a breakable tcolorbox might  -->
+<!-- be contained (like a theorem, say).  That interior breakable         -->
+<!-- tcolorbox would *automatically* be made unbreakable, and the result  -->
+<!-- was really bad page breaks, or worse, the potential for the interior -->
+<!-- box dribbling off the bottom of the page.                            -->
 <xsl:template match="introduction|conclusion" mode="environment">
     <xsl:variable name="environment-name">
         <xsl:value-of select="local-name(.)"/>
@@ -2000,16 +2126,115 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>%% </xsl:text>
     <xsl:value-of select="$environment-name"/>
     <xsl:text>: in a structured division&#xa;</xsl:text>
-    <xsl:text>\tcbset{ </xsl:text>
+    <xsl:text>\NewDocumentEnvironment{</xsl:text>
     <xsl:value-of select="$environment-name"/>
-    <xsl:text>style/.style={</xsl:text>
-    <xsl:apply-templates select="." mode="tcb-style" />
-    <xsl:text>} }&#xa;</xsl:text>
-    <xsl:text>\newtcolorbox{</xsl:text>
-    <xsl:value-of select="$environment-name"/>
-    <xsl:text>}[1]{title={\notblank{#1}{#1\space}{}}, breakable, </xsl:text>
-    <xsl:value-of select="$environment-name"/>
-    <xsl:text>style}&#xa;</xsl:text>
+    <xsl:text>}{m}&#xa;</xsl:text>
+    <xsl:choose>
+        <xsl:when test="self::introduction">
+            <xsl:text>{\notblank{#1}{\noindent\textbf{#1}\space}{}}</xsl:text>
+        </xsl:when>
+        <xsl:when test="self::conclusion">
+            <xsl:text>{\par\bigskip\notblank{#1}{\noindent\textbf{#1}\space}{}}</xsl:text>
+        </xsl:when>
+    </xsl:choose>
+    <xsl:text>{}&#xa;</xsl:text>
+</xsl:template>
+
+<!-- A division has a PTX name via local-name() and a corresponding -->
+<!-- LaTeX traditional division via the "division-name" template.   -->
+<!-- The following templates build the names of the environments,   -->
+<!-- so we can build and employ them consistently.                  -->
+
+<!-- Traditional -->
+<!-- Add suffix to avoid clashes (NB: \appendix, \index exists) -->
+<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|index" mode="division-environment-name">
+    <xsl:value-of select="local-name(.)"/>
+    <xsl:text>ptx</xsl:text>
+</xsl:template>
+
+<!-- One-Off -->
+<!-- Free here to use the PTX name, without clashing with LaTeX -->
+<xsl:template match="acknowledgement|foreword|preface" mode="division-environment-name">
+    <xsl:value-of select="local-name(.)"/>
+</xsl:template>
+
+<!-- Pervasive -->
+<!-- Product of PTX name with LaTeX level/division -->
+<xsl:template match="exercises|solutions|worksheet|references" mode="division-environment-name">
+    <xsl:value-of select="local-name(.)"/>
+    <xsl:text>-</xsl:text>
+    <xsl:apply-templates select="." mode="division-name"/>
+</xsl:template>
+
+<xsl:template match="*" mode="division-environment-name">
+    <xsl:message>NO DIVISION ENVIRONMENT NAME for <xsl:value-of select="local-name(.)"/></xsl:message>
+</xsl:template>
+
+
+<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|acknowledgement|foreword|preface|index|exercises|solutions|worksheet|references" mode="environment">
+    <!-- for specialized divisions we always make a numbered -->
+    <!-- and unnumbered version, with the latter happening   -->
+    <!-- on a second trip through the template               -->
+    <xsl:param name="second-trip" select="false()"/>
+
+    <xsl:variable name="elt-name" select="local-name(.)"/>
+    <!-- the (traditional) LaTex name of this division -->
+    <xsl:variable name="div-name">
+        <xsl:apply-templates select="." mode="division-name"/>
+    </xsl:variable>
+    <!-- explanatory string in preamble -->
+    <xsl:text>%% Environment for a PTX "</xsl:text>
+    <xsl:value-of select="$elt-name"/>
+    <xsl:text>" at the level of a LaTeX "</xsl:text>
+    <xsl:value-of select="$div-name"/>
+    <xsl:text>"&#xa;</xsl:text>
+    <!-- Define implementation of a 5-argument environment          -->
+    <!-- Template ensures consistency of definition and application -->
+    <xsl:text>\NewDocumentEnvironment{</xsl:text>
+    <xsl:apply-templates select="." mode="division-environment-name"/>
+    <!-- second trip through for a specialized -->
+    <!-- division, build unnumbered version    -->
+    <xsl:if test="$second-trip">
+        <xsl:text>-numberless</xsl:text>
+    </xsl:if>
+    <xsl:text>}{mmmmm}&#xa;</xsl:text>
+    <xsl:text>{%&#xa;</xsl:text>
+    <!-- load 6 macros with values, for style writer use -->
+    <xsl:text>\renewcommand{\divisionnameptx}{</xsl:text>
+    <xsl:apply-templates select="." mode="type-name"/>
+    <xsl:text>}%&#xa;</xsl:text>
+    <xsl:text>\renewcommand{\titleptx}{#1}%&#xa;</xsl:text>
+    <xsl:text>\renewcommand{\subtitleptx}{#2}%&#xa;</xsl:text>
+    <xsl:text>\renewcommand{\shortitleptx}{#3}%&#xa;</xsl:text>
+    <xsl:text>\renewcommand{\authorsptx}{#4}%&#xa;</xsl:text>
+    <xsl:text>\renewcommand{\epigraphptx}{#5}%&#xa;</xsl:text>
+    <!-- invoke the right LaTeX division, causes title format -->
+    <!-- and spacing, along with setting running heads        -->
+    <xsl:text>\</xsl:text>
+    <xsl:value-of select="$div-name"/>
+    <xsl:choose>
+        <!-- Second trip through, building unnumbered version -->
+        <!-- OR                                               -->
+        <!-- Never numbered, always build a starred form      -->
+        <!-- and manually add short version to ToC            -->
+        <xsl:when test="$second-trip or boolean(self::acknowledgement|self::foreword|self::preface|self::index)">
+            <xsl:text>*</xsl:text>
+            <xsl:text>{#1}%&#xa;</xsl:text>
+            <xsl:text>\addcontentsline{toc}{chapter}{#3}&#xa;</xsl:text>
+        </xsl:when>
+        <!-- optional short title, real title -->
+        <xsl:otherwise>
+            <xsl:text>[#3]{#1}%&#xa;</xsl:text>
+        </xsl:otherwise>
+    </xsl:choose>
+    <!-- close the environment definition, no finish -->
+    <xsl:text>}{}%&#xa;</xsl:text>
+    <!-- send specialized division back through a second time -->
+    <xsl:if test="not($second-trip) and boolean(self::exercises|self::solutions|self::worksheet|self::references)">
+        <xsl:apply-templates select="." mode="environment">
+            <xsl:with-param name="second-trip" select="true()"/>
+        </xsl:apply-templates>
+    </xsl:if>
 </xsl:template>
 
 <!-- "commentary" -->
@@ -2020,7 +2245,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>\tcbset{ commentarystyle/.style={</xsl:text>
     <xsl:apply-templates select="." mode="tcb-style" />
     <xsl:text>} }&#xa;</xsl:text>
-    <xsl:text>\newtcolorbox{commentary}[1]{title={#1}, breakable, commentarystyle}&#xa;</xsl:text>
+    <xsl:text>\newtcolorbox{commentary}[2]{title={#1}, label={#2}, breakable, commentarystyle}&#xa;</xsl:text>
 </xsl:template>
 
 <!-- "objectives" -->
@@ -2031,7 +2256,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>\tcbset{ objectivesstyle/.style={</xsl:text>
     <xsl:apply-templates select="." mode="tcb-style" />
     <xsl:text>} }&#xa;</xsl:text>
-    <xsl:text>\newtcolorbox{objectives}[1]{title={#1}, breakable, objectivesstyle}&#xa;</xsl:text>
+    <xsl:text>\newtcolorbox{objectives}[2]{title={#1}, label={#2}, breakable, objectivesstyle}&#xa;</xsl:text>
 </xsl:template>
 
 <!-- "outcomes" -->
@@ -2042,7 +2267,7 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>\tcbset{ outcomesstyle/.style={</xsl:text>
     <xsl:apply-templates select="." mode="tcb-style" />
     <xsl:text>} }&#xa;</xsl:text>
-    <xsl:text>\newtcolorbox{outcomes}[1]{title={#1}, breakable, outcomesstyle}&#xa;</xsl:text>
+    <xsl:text>\newtcolorbox{outcomes}[2]{title={#1}, label={#2}, breakable, outcomesstyle}&#xa;</xsl:text>
 </xsl:template>
 
 <!-- back "colophon" -->
@@ -2081,13 +2306,21 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 </xsl:template>
 
 <!-- "paragraphs" -->
-<!-- Body:  \begin{paragraphs}{title}{label}  -->
+<!-- Body:  \begin{paragraphs}{title}{label}   -->
+<!-- "titlesec" package, Subsection 9.2 has LaTeX defaults -->
+<!-- We drop the indentation, and we pass the title itself -->
+<!-- explicity with macro parameter #1 since we do not save-->
+<!-- off the title in a PTX macro.  None of this is meant  -->
+<!-- to support customization in a style.                  -->
+<!-- Once a tcolorbox, see warnings as part of divisional  -->
+<!-- introductions and conclusions.                        -->
 <xsl:template match="paragraphs" mode="environment">
     <xsl:text>%% paragraphs: the terminal, pseudo-division&#xa;</xsl:text>
-    <xsl:text>\tcbset{ paragraphsstyle/.style={</xsl:text>
-    <xsl:apply-templates select="." mode="tcb-style" />
-    <xsl:text>} }&#xa;</xsl:text>
-    <xsl:text>\newtcolorbox{paragraphs}[2]{title={#1}, phantom={\hypertarget{#2}{}}, breakable, paragraphsstyle}&#xa;</xsl:text>
+    <xsl:text>%% We use the lowest LaTeX traditional division&#xa;</xsl:text>
+    <xsl:text>\titleformat{\subparagraph}[runin]{\normalfont\normalsize\bfseries}{\thesubparagraph}{1em}{#1}&#xa;</xsl:text>
+    <xsl:text>\titlespacing*{\subparagraph}{0pt}{3.25ex plus 1ex minus .2ex}{1em}&#xa;</xsl:text>
+    <xsl:text>\NewDocumentEnvironment{paragraphs}{mm}&#xa;</xsl:text>
+    <xsl:text>{\subparagraph*{#1}\hypertarget{#2}{}}{}&#xa;</xsl:text>
 </xsl:template>
 
 <!-- ASIDE-LIKE: "aside", "historical", "biographical" -->
@@ -2317,12 +2550,6 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>size=minimal, before skip=5ex, left skip=0.15\textwidth, right skip=0.15\textwidth, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\large\bfseries, center title, halign=center, bottomtitle=2ex</xsl:text>
 </xsl:template>
 
-<!-- "paragraphs" -->
-<!-- Run-in title, mandatory -->
-<xsl:template match="paragraphs" mode="tcb-style">
-    <xsl:text>size=minimal, before skip=3ex, boxrule=-0.3pt, frame empty, colback=white, colbacktitle=white, coltitle=black, fonttitle=\normalfont\bfseries, attach title to upper, after title={\space}</xsl:text>
-</xsl:template>
-
 <!-- THEOREM-LIKE: "theorem", "corollary", "lemma",    -->
 <!--               "algorithm", "proposition",         -->
 <!--               "claim", "fact", "identity"         -->
@@ -2367,7 +2594,57 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- It is convenient for development, testing, and convenience    -->
 <xsl:template match="*" mode="tcb-style" />
 
+<!-- ################### -->
+<!-- Titles of Divisions -->
+<!-- ################### -->
+
+<!-- Section 9.2 of the "titlesec" package has default parameters   -->
+<!-- which mimic LaTeX style and spacing.  We use those here, so    -->
+<!-- we can integrate an author credit into the heading/title       -->
+<!-- before any spacing happens.  Authors are one fontsize smaller, -->
+<!-- and placed in the optional "after-code" argument               -->
+<!-- TODO: integrate "epigraph" package perhaps                     -->
+
+<!-- Not implemented/explored -->
+<xsl:template name="titlesec-part-style"/>
+
+<!-- Note the use of "\divisionnameptx" macro -->
+<xsl:template name="titlesec-chapter-style">
+    <xsl:text>\titleformat{\chapter}[display]&#xa;</xsl:text>
+    <xsl:text>{\normalfont\huge\bfseries}{\divisionnameptx\space\thechapter}{20pt}{\Huge#1}&#xa;</xsl:text>
+    <xsl:text>[{\Large\authorsptx}]&#xa;</xsl:text>
+    <xsl:text>\titlespacing*{\chapter}{0pt}{50pt}{40pt}&#xa;</xsl:text>
+</xsl:template>
+
+<!-- Refences, and especially Index, are unnumbered -->
+<!-- section-level items in the back matter         -->
+<xsl:template name="titlesec-section-style">
+    <xsl:text>\titleformat{\section}&#xa;</xsl:text>
+    <xsl:text>{\normalfont\Large\bfseries}{\thesection\space\titleptx}{1em}{}&#xa;</xsl:text>
+    <xsl:text>[{\large\authorsptx}]&#xa;</xsl:text>
+    <xsl:text>\titleformat{name=\section,numberless}&#xa;</xsl:text>
+    <xsl:text>{\normalfont\Large\bfseries}{}{0pt}{#1}&#xa;</xsl:text>
+    <xsl:text>\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}&#xa;</xsl:text>
+</xsl:template>
+
+<xsl:template name="titlesec-subsection-style">
+    <xsl:text>\titleformat{\subsection}&#xa;</xsl:text>
+    <xsl:text>{\normalfont\large\bfseries}{\thesubsection\space\titleptx}{1em}{}&#xa;</xsl:text>
+    <xsl:text>[{\normalsize\authorsptx}]&#xa;</xsl:text>
+    <xsl:text>\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}&#xa;</xsl:text>
+</xsl:template>
+
+<xsl:template name="titlesec-subsubsection-style">
+    <xsl:text>\titleformat{\subsubsection}&#xa;</xsl:text>
+    <xsl:text>{\normalfont\normalsize\bfseries}{\thesubsubsection\space\titleptx}{1em}{}&#xa;</xsl:text>
+    <xsl:text>[{\small\authorsptx}]&#xa;</xsl:text>
+    <xsl:text>\titlespacing*{\subsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}&#xa;</xsl:text>
+</xsl:template>
+
+<!-- ############################ -->
 <!-- Page Styles, Headers/Footers -->
+<!-- ############################ -->
+
 <!-- This is all default LaTeX                                        -->
 <!-- TODO: See titleps.pdf in the "titlesec" package for definitions  -->
 <!-- similar to stock LaTeX but without the all-caps look.  Implement -->
@@ -2870,30 +3147,6 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:apply-templates select="*" />
 </xsl:template>
 
-<!-- Preface, etc within \frontmatter is usually handled correctly by LaTeX -->
-<!-- Allow alternative titles, like "Preface to 2nd Edition"                -->
-<!-- But we use starred version anyway, so chapter headings react properly  -->
-<!-- DTD: enforce order: dedication, acknowledgements, forewords, prefaces -->
-<!-- TODO: add other frontmatter, move in title handling        -->
-<!-- TODO: add to headers, currently just CONTENTS, check backmatter        -->
-<xsl:template match="acknowledgement|foreword|preface">
-    <xsl:text>%% begin: </xsl:text>
-    <xsl:value-of select="local-name(.)" />
-    <xsl:text>&#xa;</xsl:text>
-    <xsl:text>\chapter*{</xsl:text>
-    <xsl:apply-templates  select="." mode="title-full" />
-    <xsl:text>}</xsl:text>
-    <xsl:apply-templates select="." mode="label" />
-    <xsl:text>&#xa;</xsl:text>
-    <xsl:text>\addcontentsline{toc}{chapter}{</xsl:text>
-    <xsl:apply-templates select="." mode="title-simple" />
-    <xsl:text>}&#xa;</xsl:text>
-    <xsl:apply-templates />
-    <xsl:text>%% end:   </xsl:text>
-    <xsl:value-of select="local-name(.)" />
-    <xsl:text>&#xa;</xsl:text>
-</xsl:template>
-
 <!-- Dedication page is very plain, with a blank obverse     -->
 <!-- Accomodates multiple recipient (eg if multiple authors) -->
 <xsl:template match="dedication">
@@ -3194,7 +3447,9 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 
 <xsl:template match="notation" mode="backmatter">
     <xsl:text>\(</xsl:text>
-    <xsl:apply-templates select="usage" />
+    <!-- "usage" should be raw latex, so -->
+    <!-- should avoid text processing    -->
+    <xsl:value-of select="usage" />
     <xsl:text>\)</xsl:text>
     <xsl:text>&amp;</xsl:text>
     <xsl:apply-templates select="description" />
@@ -3209,52 +3464,60 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- Solutions Divisions, Content Generation -->
 <!-- ####################################### -->
 
+<!-- TODO: this could be an xparse environment, perhaps -->
+<!-- with a key indicating fontsize or division level   -->
 <xsl:template match="chapter|section|subsection|subsubsection|exercises" mode="division-in-solutions">
     <xsl:param name="scope" />
     <xsl:param name="content" />
 
-    <xsl:variable name="division-name">
+    <xsl:variable name="font-size">
         <xsl:choose>
             <!-- backmatter placement gets appendix like chapter -->
             <xsl:when test="$scope/self::book">
-                <xsl:text>section</xsl:text>
+                <xsl:text>\Large</xsl:text>
             </xsl:when>
             <!-- backmatter placement gets appendix like section -->
             <xsl:when test="$scope/self::article">
-                <xsl:text>subsection</xsl:text>
+                <xsl:text>\large</xsl:text>
             </xsl:when>
             <!-- divisional placement is one level less -->
             <xsl:when test="$scope/self::chapter">
-                <xsl:text>section</xsl:text>
+                <xsl:text>\Large</xsl:text>
             </xsl:when>
             <xsl:when test="$scope/self::section">
-                <xsl:text>subsection</xsl:text>
+                <xsl:text>\large</xsl:text>
             </xsl:when>
             <xsl:when test="$scope/self::subsection">
-                <xsl:text>subsubsection</xsl:text>
+                <xsl:text>\normalsize</xsl:text>
+            </xsl:when>
+            <xsl:when test="$scope/self::subsubsection">
+                <xsl:text>\normalsize</xsl:text>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:message>PTX:BUG:     "solutions" division lacks a LaTeX name</xsl:message>
+                <xsl:message>PTX:BUG:     "solutions" division title does not have a font size</xsl:message>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
 
-    <!-- LaTeX heading with hard-coded number -->
-    <xsl:text>\</xsl:text>
-    <xsl:value-of select="$division-name" />
-    <xsl:text>*{</xsl:text>
-    <!-- control the numbering, i.e. hard-coded -->
-    <xsl:variable name="the-number">
-        <xsl:apply-templates select="." mode="number" />
+    <!-- Does the current division get a number at birth? -->
+    <xsl:variable name="is-structured">
+        <xsl:apply-templates select="parent::*" mode="is-structured-division"/>
     </xsl:variable>
-    <!-- no trailing space if no number                          -->
-    <!-- Solo "exercises" do not display their number at "birth" -->
-    <xsl:if test="not($the-number = '' or self::exercises[count(parent::*/exercises)=1])">
-        <xsl:value-of select="$the-number" />
-        <xsl:text> </xsl:text>
+    <xsl:variable name="b-is-structured" select="$is-structured = 'true'"/>
+
+    <!-- LaTeX heading, possibly with hard-coded number -->
+    <xsl:text>\par\smallskip&#xa;\noindent\textbf{</xsl:text>
+    <xsl:value-of select="$font-size" />
+    <!-- A structured division has numbered subdivisions              -->
+    <!-- Otherwise "exercises" do not display their number at "birth" -->
+    <xsl:if test="$b-is-structured">
+        <xsl:text>{}</xsl:text>
+        <xsl:apply-templates select="." mode="number" />
+        <xsl:text>\space</xsl:text>
     </xsl:if>
+    <xsl:text>\textperiodcentered\space{}</xsl:text>
     <xsl:apply-templates select="." mode="title-full" />
-    <xsl:text>}&#xa;</xsl:text>
+    <xsl:text>}&#xa;\par\smallskip&#xa;</xsl:text>
 
     <xsl:copy-of select="$content" />
 </xsl:template>
@@ -3470,21 +3733,20 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- ################ -->
 
 <!-- Divisions, "part" to "subsubsection", and specialized -->
-<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|exercises|worksheet|solutions|references">
+<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|acknowledgement|foreword|preface|exercises|worksheet|solutions|references">
     <!-- appendices are peers of chapters (book) or sections (article)  -->
     <!-- so we need to slip this in first, with book's \backmatter later-->
     <!-- NB: if no appendices, the backmatter template does \backmatter -->
     <xsl:apply-templates select="." mode="console-typeout" />
     <xsl:apply-templates select="." mode="begin-language" />
-    <xsl:apply-templates select="." mode="latex-division-heading" />
-    <!-- List the author(s) of this division, if present -->
-    <xsl:if test="author">
-        <xsl:text>\</xsl:text>
-        <xsl:value-of select="local-name(.)"/>
-        <xsl:text>authors{</xsl:text>
-        <xsl:apply-templates select="author" mode="name-list"/>
-        <xsl:text>}&#xa;</xsl:text>
+    <!-- To make LaTeX produce "lettered" appendices we issue the \appendix -->
+    <!-- macro prior to the first to the first "appendix" or backmatter/solutions.                            -->
+    <xsl:if test="(self::appendix or self::solutions[parent::backmatter]) and not(preceding-sibling::appendix|preceding-sibling::solutions)">
+        <xsl:text>%&#xa;</xsl:text>
+        <xsl:text>\appendix&#xa;</xsl:text>
+        <xsl:text>%&#xa;</xsl:text>
     </xsl:if>
+    <xsl:apply-templates select="." mode="latex-division-heading" />
     <!-- Process the contents, title, idx killed, but avoid author -->
     <!-- "solutions" content needs to call content generator       -->
     <xsl:choose>
@@ -3524,66 +3786,48 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- Division Headers and Footers -->
 <!-- ############################ -->
 
-<!-- The first line or two of a division vary some, -->
-<!-- especially for specialized divisions, so we    -->
-<!-- abstract that portion of the output            -->
+<!-- A typical division has 5 arguments (below).  For specialized       -->
+<!-- divisions we need to adjust the environment name for numbered      -->
+<!-- v. unnumbered instances.  Worksheets are exception with a          -->
+<!-- page layout change.                                                -->
+<!--                                                                    -->
+<!--    1. title                                                        -->
+<!--    2. subtitle                                                     -->
+<!--    3. shorttitle                                                   -->
+<!--    4. author                                                       -->
+<!--    5. epigraph (unimplemented)                                     -->
+<!--                                                                    -->
+<!-- A "solutions" division in the back matter is implemented as an     -->
+<!-- appendix.  The levels and division-name templates will produce a   -->
+<!-- LaTeX chapter for a "book" and a LaTeX "section" for an "article". -->
 
-<!-- The "normal" parts of a book are straightforward       -->
-<!-- Always titled, always numbered by LaTeX, always to ToC -->
-<!-- Includes a "short" title for ToC, running heads, etc   -->
-<!-- LaTeX's *optional* arguments are counter to TeX's arguments  -->
-<!-- So text in an optional argument should always be in a group, -->
-<!-- especially if it contains a closing bracket                  -->
-<!-- We have such protection below, and elsewhere without comment -->
-<!-- See http://tex.stackexchange.com/questions/99495             -->
-<!-- LaTeX3e with the xparse package might make this unnecessary  -->
-
-<xsl:template match="part|chapter|section|subsection|subsubsection" mode="latex-division-heading">
-    <xsl:text>\</xsl:text>
-    <xsl:apply-templates select="." mode="division-name" />
-    <xsl:text>[{</xsl:text>
-    <xsl:apply-templates select="." mode="title-simple"/>
-    <xsl:text>}]</xsl:text>
+<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|acknowledgement|foreword|preface|solutions[parent::backmatter]" mode="latex-division-heading">
+    <xsl:text>\begin{</xsl:text>
+    <xsl:apply-templates select="." mode="division-environment-name" />
+    <xsl:text>}</xsl:text>
     <xsl:text>{</xsl:text>
     <xsl:apply-templates select="." mode="title-full"/>
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <!-- subtitle here -->
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <xsl:apply-templates select="." mode="title-simple"/>
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <xsl:apply-templates select="author" mode="name-list"/>
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <!-- subtitle here -->
+    <!-- <xsl:text>An epigraph here\\with two lines\\-Rob</xsl:text> -->
     <xsl:text>}</xsl:text>
     <xsl:apply-templates select="." mode="label" />
     <xsl:text>&#xa;</xsl:text>
 </xsl:template>
 
-<!-- A "solutions" division in the back matter is implemented as        -->
-<!-- an appendix.  The levels and division-name templates will produce  -->
-<!-- a LaTeX chapter for a "book" and a LaTeX section for an "article". -->
-<!-- To make LaTeX produce "lettered" appendices we issue the \appendix -->
-<!-- macro prior to the first to match here.                            -->
-<xsl:template match="appendix|backmatter/solutions" mode="latex-division-heading">
-    <xsl:if test="not(preceding-sibling::appendix|preceding-sibling::solutions)">
-        <xsl:text>%&#xa;</xsl:text>
-        <xsl:text>\appendix&#xa;</xsl:text>
-        <xsl:text>%&#xa;</xsl:text>
-    </xsl:if>
-    <xsl:text>\</xsl:text>
-    <xsl:apply-templates select="." mode="division-name" />
-    <xsl:text>[{</xsl:text>
-    <xsl:apply-templates select="." mode="title-simple"/>
-    <xsl:text>}]</xsl:text>
-    <xsl:text>{</xsl:text>
-    <xsl:apply-templates select="." mode="title-full"/>
-    <xsl:text>}</xsl:text>
-    <xsl:apply-templates select="." mode="label" />
-    <xsl:text>&#xa;</xsl:text>
-</xsl:template>
-
-<!-- Specialized divisions are numbered just like         -->
-<!-- other divisions, if within a division structured     -->
-<!-- by subdivisons.  Otherwise they are limited by the   -->
-<!-- schema to one per division and when referenced their -->
-<!-- number will be that of the containing division.      -->
+<!-- Specialized Divisions: we do not implement "author", "subtitle",  -->
+<!-- or "epigraph" yet.  These may be added/supported later.           -->
 <xsl:template match="exercises|solutions[not(parent::backmatter)]|references|worksheet" mode="latex-division-heading">
-    <xsl:if test="self::worksheet">
-        <!-- \newgeometry includes a \clearpage -->
-        <xsl:apply-templates select="." mode="new-geometry"/>
-    </xsl:if>
     <!-- Inspect parent (part through subsubsection)  -->
     <!-- to determine one of two models of a division -->
     <!-- NB: return values are 'true' and empty       -->
@@ -3591,35 +3835,34 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:apply-templates select="parent::*" mode="is-structured-division"/>
     </xsl:variable>
     <xsl:variable name="b-is-structured" select="$is-structured = 'true'"/>
-    <xsl:text>\</xsl:text>
-    <xsl:apply-templates select="." mode="division-name" />
-    <!-- optional simple title if numbered, or -->
-    <!-- starred form if not visually numbered -->
-    <xsl:choose>
-        <xsl:when test="$b-is-structured">
-            <xsl:text>[{</xsl:text>
-            <xsl:apply-templates select="." mode="title-simple"/>
-            <xsl:text>}]</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:text>*</xsl:text>
-        </xsl:otherwise>
-    </xsl:choose>
+
+    <xsl:if test="self::worksheet">
+        <!-- \newgeometry includes a \clearpage -->
+        <xsl:apply-templates select="." mode="new-geometry"/>
+    </xsl:if>
+    <xsl:text>\begin{</xsl:text>
+    <xsl:apply-templates select="." mode="division-environment-name" />
+    <xsl:if test="not($b-is-structured)">
+        <xsl:text>-numberless</xsl:text>
+    </xsl:if>
+    <xsl:text>}</xsl:text>
     <xsl:text>{</xsl:text>
     <xsl:apply-templates select="." mode="title-full"/>
     <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <!-- subtitle here -->
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <xsl:apply-templates select="." mode="title-simple"/>
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <!-- author here -->
+    <xsl:text>}</xsl:text>
+    <xsl:text>{</xsl:text>
+    <!-- subtitle here -->
+    <xsl:text>}</xsl:text>
     <xsl:apply-templates select="." mode="label" />
     <xsl:text>&#xa;</xsl:text>
-    <!-- We add a ToC entry for the starred versions. These may be    -->
-    <!-- generated for divisions that are below the ToC display       -->
-    <!-- level, but they do not render as the ToC level prevails      -->
-    <xsl:if test="not($b-is-structured)">
-        <xsl:text>\addcontentsline{toc}{</xsl:text>
-        <xsl:apply-templates select="." mode="division-name" />
-        <xsl:text>}{</xsl:text>
-        <xsl:apply-templates select="." mode="title-simple" />
-        <xsl:text>}&#xa;</xsl:text>
-    </xsl:if>
 </xsl:template>
 
 <!-- Exceptional, for a worksheet only, we clear the page  -->
@@ -3712,15 +3955,33 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>}&#xa;</xsl:text>
 </xsl:template>
 
-<!-- Footers are mostly empty, except for "worksheet" -->
-<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|exercises|solutions|references" mode="latex-division-footing"/>
-
-<!-- The heading will change the geometry, this will restore it -->
-<xsl:template match="worksheet" mode="latex-division-footing">
-    <!-- \restoregeometry includes a \clearpage -->
-    <xsl:text>\restoregeometry&#xa;</xsl:text>
+<!-- Footers are straightfoward, except for specialized divisions -->
+<xsl:template match="part|chapter|appendix|section|subsection|subsubsection|acknowledgement|foreword|preface|solutions[parent::backmatter]" mode="latex-division-footing">
+    <xsl:text>\end{</xsl:text>
+    <xsl:apply-templates select="." mode="division-environment-name" />
+    <xsl:text>}&#xa;</xsl:text>
 </xsl:template>
 
+<xsl:template match="exercises|solutions[not(parent::backmatter)]|references|worksheet" mode="latex-division-footing">
+    <!-- Inspect parent (part through subsubsection)  -->
+    <!-- to determine one of two models of a division -->
+    <!-- NB: return values are 'true' and empty       -->
+    <xsl:variable name="is-structured">
+        <xsl:apply-templates select="parent::*" mode="is-structured-division"/>
+    </xsl:variable>
+    <xsl:variable name="b-is-structured" select="$is-structured = 'true'"/>
+
+    <xsl:text>\end{</xsl:text>
+    <xsl:apply-templates select="." mode="division-environment-name" />
+    <xsl:if test="not($b-is-structured)">
+        <xsl:text>-numberless</xsl:text>
+    </xsl:if>
+    <xsl:text>}&#xa;</xsl:text>
+    <xsl:if test="self::worksheet">
+        <!-- \restoregeometry includes a \clearpage -->
+        <xsl:text>\restoregeometry&#xa;</xsl:text>
+    </xsl:if>
+</xsl:template>
 
 <!-- Introductions and Conclusions -->
 <!-- Simple containers, allowed before and after      -->
@@ -4205,7 +4466,18 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- "exercises" may be divided by a future "subexercises"   -->
 <!-- and/or by an "exercisegroup", so we match with "//"     -->
 <xsl:template match="exercises//exercise|worksheet//exercise">
-    <xsl:text>\begin{divisionexercise}</xsl:text>
+    <xsl:variable name="env-name">
+        <xsl:text>divisionexercise</xsl:text>
+        <xsl:if test="ancestor::exercisegroup">
+            <xsl:text>eg</xsl:text>
+        </xsl:if>
+        <xsl:if test="ancestor::exercisegroup/@cols">
+            <xsl:text>col</xsl:text>
+        </xsl:if>
+    </xsl:variable>
+    <xsl:text>\begin{</xsl:text>
+    <xsl:value-of select="$env-name"/>
+    <xsl:text>}</xsl:text>
     <xsl:text>{</xsl:text>
     <xsl:apply-templates select="." mode="serial-number" />
     <xsl:text>}</xsl:text>
@@ -4301,7 +4573,9 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:if>
     <!-- closing % necessary, as newline between adjacent environments -->
     <!-- will cause a slight indent on trailing exercise               -->
-    <xsl:text>\end{divisionexercise}%&#xa;</xsl:text>
+    <xsl:text>\end{</xsl:text>
+    <xsl:value-of select="$env-name"/>
+    <xsl:text>}%&#xa;</xsl:text>
 </xsl:template>
 
 
@@ -4336,7 +4610,18 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 
     <xsl:if test="not($dry-run = '')">
         <!-- Using fully-qualified number in solution lists -->
-        <xsl:text>\begin{divisionexercisesolution}</xsl:text>
+        <xsl:variable name="env-name">
+            <xsl:text>divisionsolution</xsl:text>
+            <xsl:if test="ancestor::exercisegroup">
+                <xsl:text>eg</xsl:text>
+            </xsl:if>
+            <xsl:if test="ancestor::exercisegroup/@cols">
+                <xsl:text>col</xsl:text>
+            </xsl:if>
+        </xsl:variable>
+        <xsl:text>\begin{</xsl:text>
+        <xsl:value-of select="$env-name"/>
+        <xsl:text>}</xsl:text>
         <xsl:text>{</xsl:text>
         <xsl:apply-templates select="." mode="number" />
         <xsl:text>}</xsl:text>
@@ -4423,7 +4708,9 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
         </xsl:if>
         <!-- closing % necessary, as newline between adjacent environments -->
         <!-- will cause a slight indent on trailing exercise               -->
-        <xsl:text>\end{divisionexercisesolution}%&#xa;</xsl:text>
+        <xsl:text>\end{</xsl:text>
+        <xsl:value-of select="$env-name"/>
+        <xsl:text>}%&#xa;</xsl:text>
     </xsl:if>
 </xsl:template>
 
@@ -4585,25 +4872,33 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:apply-templates select="." mode="label" />
     <xsl:text>%&#xa;</xsl:text>
     <xsl:apply-templates select="introduction" />
-    <xsl:text>\begin{exercisegroup}{</xsl:text>
     <xsl:choose>
-        <xsl:when test="not(@cols)">
-            <xsl:text>1</xsl:text>
+        <xsl:when test="not(@cols) or (@cols = 1)">
+            <xsl:text>\begin{exercisegroup}&#xa;</xsl:text>
         </xsl:when>
-        <xsl:when test="@cols = 1 or @cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+        <xsl:when test="@cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+            <xsl:text>\begin{exercisegroupcol}</xsl:text>
+            <xsl:text>{</xsl:text>
             <xsl:value-of select="@cols"/>
+            <xsl:text>}&#xa;</xsl:text>
         </xsl:when>
         <xsl:otherwise>
             <xsl:message terminate="yes">MBX:ERROR: invalid value <xsl:value-of select="@cols" /> for cols attribute of exercisegroup</xsl:message>
         </xsl:otherwise>
     </xsl:choose>
-    <xsl:text>}&#xa;</xsl:text>
     <xsl:apply-templates select="exercise">
         <xsl:with-param name="b-has-hint" select="$b-has-divisional-hint" />
         <xsl:with-param name="b-has-answer" select="$b-has-divisional-answer" />
         <xsl:with-param name="b-has-solution" select="$b-has-divisional-solution" />
-        </xsl:apply-templates>
-    <xsl:text>\end{exercisegroup}&#xa;</xsl:text>
+    </xsl:apply-templates>
+    <xsl:choose>
+        <xsl:when test="not(@cols) or (@cols = 1)">
+            <xsl:text>\end{exercisegroup}&#xa;</xsl:text>
+        </xsl:when>
+        <xsl:when test="@cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+            <xsl:text>\end{exercisegroupcol}&#xa;</xsl:text>
+        </xsl:when>
+    </xsl:choose>
     <xsl:if test="conclusion">
         <xsl:text>\par\noindent%&#xa;</xsl:text>
         <xsl:apply-templates select="conclusion" />
@@ -4650,29 +4945,21 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:if test="$b-has-statement">
             <xsl:apply-templates select="introduction" />
         </xsl:if>
-        <!-- use a specialized format when statements are turned off  -->
-        <!-- or when there is no introduction nor conclusion          -->
-        <!-- Typically this will just switch-off indentation          -->
+        <!-- the container for the exercisegroup does not need to change -->
+        <!-- when in a solutions list.  The indentation might look odd   -->
+        <!-- without an introduction (when there are no statements), or  -->
+        <!-- it might remind the reader of the grouping                  -->
         <xsl:choose>
-            <xsl:when test="$b-has-statement and (introduction or conclusion)">
-                <xsl:text>\begin{exercisegroup}{</xsl:text>
+            <xsl:when test="not(@cols) or (@cols = 1)">
+                <xsl:text>\begin{exercisegroup}&#xa;</xsl:text>
             </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>\begin{exercisegroupsolution}{</xsl:text>
-            </xsl:otherwise>
-        </xsl:choose>
-        <xsl:choose>
-            <xsl:when test="not(@cols)">
-                <xsl:text>1</xsl:text>
-            </xsl:when>
-            <xsl:when test="@cols = 1 or @cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+            <xsl:when test="@cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+                <xsl:text>\begin{exercisegroupcol}</xsl:text>
+                <xsl:text>{</xsl:text>
                 <xsl:value-of select="@cols"/>
+                <xsl:text>}&#xa;</xsl:text>
             </xsl:when>
-            <xsl:otherwise>
-                <xsl:message terminate="yes">MBX:ERROR: invalid value <xsl:value-of select="@cols" /> for cols attribute of exercisegroup</xsl:message>
-            </xsl:otherwise>
         </xsl:choose>
-        <xsl:text>}&#xa;</xsl:text>
         <xsl:apply-templates select="exercise" mode="solutions">
             <xsl:with-param name="b-has-statement" select="$b-has-statement" />
             <xsl:with-param name="b-has-hint" select="$b-has-hint" />
@@ -4680,12 +4967,12 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
             <xsl:with-param name="b-has-solution" select="$b-has-solution" />
         </xsl:apply-templates>
         <xsl:choose>
-            <xsl:when test="$b-has-statement and (introduction or conclusion)">
+            <xsl:when test="not(@cols) or (@cols = 1)">
                 <xsl:text>\end{exercisegroup}&#xa;</xsl:text>
             </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>\end{exercisegroupsolution}&#xa;</xsl:text>
-            </xsl:otherwise>
+            <xsl:when test="@cols = 2 or @cols = 3 or @cols = 4 or @cols = 5 or @cols = 6">
+                <xsl:text>\end{exercisegroupcol}&#xa;</xsl:text>
+            </xsl:when>
         </xsl:choose>
         <xsl:if test="$b-has-statement">
             <xsl:apply-templates select="conclusion" />
@@ -5220,7 +5507,9 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:apply-templates select="." mode="title-full" />
     </xsl:if>
     <xsl:text>}</xsl:text>
-    <xsl:apply-templates select="." mode="label"/>
+    <xsl:text>{</xsl:text>
+    <xsl:apply-templates select="." mode="internal-id"/>
+    <xsl:text>}</xsl:text>
     <xsl:text>&#xa;</xsl:text>
     <xsl:apply-templates select="introduction" />
     <xsl:apply-templates select="ol|ul|dl" />
@@ -6285,11 +6574,15 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- Within titles, we just produce (formatted)      -->
 <!-- text, but nothing active                        -->
 
+<!-- content-less form, active or not -->
 <xsl:template match="url">
     <!-- choose a macro, font change, or active link -->
     <xsl:choose>
         <xsl:when test="ancestor::title|ancestor::subtitle">
             <xsl:text>\mono{</xsl:text>
+        </xsl:when>
+        <xsl:when test="@link = 'no'">
+            <xsl:text>\nolinkurl{</xsl:text>
         </xsl:when>
         <xsl:otherwise>
             <xsl:text>\url{</xsl:text>
@@ -9069,6 +9362,104 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:text>&#xa;</xsl:text>
     <xsl:apply-templates />
 </xsl:template>
+
+<!-- ############### -->
+<!-- Text Processing -->
+<!-- ############### -->
+
+<!-- The general template for matching "text()" nodes will     -->
+<!-- apply this template (there is a hook there).  Verbatim    -->
+<!-- text should be manipulated in templates with              -->
+<!-- "xsl:value-of" and so not come through here.  Conversely, -->
+<!-- when "xsl:apply-templates" is applied, the template will  -->
+<!-- have effect.                                              -->
+<!--                                                           -->
+<!-- Our emphasis originally is on escaping characters that    -->
+<!-- LaTeX has hijacked for special purposes.  First we define -->
+<!-- some variables globally, so it is only necessary once.    -->
+
+
+<!-- XML: & < > -->
+
+
+<!-- LaTeX: # $ % ^ & _ { } ~ \ -->
+
+
+<xsl:variable name="temp-left-brace"  select="'[x[UxDbNWiRqGnV.]x]'" />
+<xsl:variable name="temp-right-brace" select="'[x[ohQiMJjEdf0jQ]x]'" />
+
+
+<xsl:variable name="ampersand-replacement">
+    <xsl:call-template name="ampersand-character"/>
+</xsl:variable>
+
+<xsl:variable name="less-replacement">
+    <xsl:call-template name="less-character"/>
+</xsl:variable>
+
+<xsl:variable name="greater-replacement">
+    <xsl:call-template name="greater-character"/>
+</xsl:variable>
+
+<xsl:variable name="hash-replacement">
+    <xsl:call-template name="hash-character"/>
+</xsl:variable>
+
+<xsl:variable name="backslash-replacement">
+    <xsl:call-template name="backslash-character"/>
+</xsl:variable>
+
+<xsl:variable name="lbrace-replacement">
+    <xsl:call-template name="lbrace-character"/>
+</xsl:variable>
+
+<xsl:variable name="rbrace-replacement">
+    <xsl:call-template name="rbrace-character"/>
+</xsl:variable>
+
+<xsl:variable name="dollar-replacement">
+    <xsl:call-template name="dollar-character"/>
+</xsl:variable>
+
+<xsl:variable name="percent-replacement">
+    <xsl:call-template name="percent-character"/>
+</xsl:variable>
+
+<xsl:variable name="circumflex-replacement">
+    <xsl:call-template name="circumflex-character"/>
+</xsl:variable>
+
+<xsl:variable name="underscore-replacement">
+    <xsl:call-template name="underscore-character"/>
+</xsl:variable>
+
+<xsl:variable name="tilde-replacement">
+    <xsl:call-template name="tilde-character"/>
+</xsl:variable>
+
+<xsl:template name="text-processing">
+    <xsl:param name="text"/>
+    <!-- Braces first, then backslash is OK, then rest -->
+    <xsl:variable name="lbrace-temped" select="str:replace($text,          '{', $temp-left-brace)"/>
+    <xsl:variable name="rbrace-temped" select="str:replace($lbrace-temped, '}', $temp-right-brace)"/>
+
+    <xsl:variable name="backslash-fixed"  select="str:replace($rbrace-temped,    '\',     $backslash-replacement)"/>
+    <xsl:variable name="amp-fixed"        select="str:replace($backslash-fixed,  '&amp;', $ampersand-replacement)"/>
+    <xsl:variable name="less-fixed"       select="str:replace($amp-fixed,        '&lt;',  $less-replacement)"/>
+    <xsl:variable name="greater-fixed"    select="str:replace($less-fixed,       '&gt;',  $greater-replacement)"/>
+    <xsl:variable name="hash-fixed"       select="str:replace($greater-fixed,    '#',     $hash-replacement)"/>
+    <xsl:variable name="dollar-fixed"     select="str:replace($hash-fixed,       '$',     $dollar-replacement)"/>
+    <xsl:variable name="percent-fixed"    select="str:replace($dollar-fixed,     '%',     $percent-replacement)"/>
+    <xsl:variable name="circumflex-fixed" select="str:replace($percent-fixed,    '^',     $circumflex-replacement)"/>
+    <xsl:variable name="underscore-fixed" select="str:replace($circumflex-fixed, '_',     $underscore-replacement)"/>
+    <xsl:variable name="tilde-fixed"      select="str:replace($underscore-fixed, '~',     $tilde-replacement)"/>
+
+    <xsl:variable name="lbrace-fixed" select="str:replace($tilde-fixed,  $temp-left-brace, $lbrace-replacement)"/>
+    <xsl:variable name="rbrace-fixed" select="str:replace($lbrace-fixed, $temp-right-brace, $rbrace-replacement)"/>
+
+    <xsl:value-of select="$rbrace-fixed"/>
+</xsl:template>
+
 
 <!-- ######### -->
 <!-- Utilities -->
