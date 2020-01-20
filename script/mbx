@@ -71,6 +71,63 @@ def tikz_conversion(xml_source, xmlid_root, dest_dir, outformat):
             if outformat == 'pdf':
                 shutil.copy2(tikzpdf, dest_dir)
 
+def lilypond_conversion(xml_source, xmlid_root, dest_dir, outformat):
+    global config
+    import tempfile, os, os.path, subprocess, shutil
+    _verbose('converting Lilypond scores from {} to {} graphics for placement in {}'.format(xml_source, outformat.upper(), dest_dir))
+    dest_dir = sanitize_directory(dest_dir)
+    tmp_dir = tempfile.mkdtemp()
+    plat = get_platform()
+    if plat == "Windows":
+        dest_dir = break_windows_path(dest_dir)
+        tmp_dir = break_windows_path(tmp_dir)
+    _debug("temporary directory: {}".format(tmp_dir))
+    xslt_executable = get_executable(config, 'xslt')
+    _debug("xslt executable: {}".format(xslt_executable))
+    lilypond_executable = get_executable(config, 'lilypond')
+    _debug("lilypond executable: {}".format(lilypond_executable))
+    extract_cmd = [xslt_executable,
+        '--stringparam', 'scratch', tmp_dir,
+        '--stringparam', 'subtree', xmlid_root,
+        '--xinclude',
+        os.path.join(mbx_xsl_dir, 'extract-lilypond.xsl'),
+        xml_source
+        ]
+    _verbose("extracting Lilypond scores from {}".format(xml_source))
+    subprocess.call(extract_cmd)
+    cwd = os.getcwd()
+    os.chdir(tmp_dir)
+    devnull = open(os.devnull, 'w')
+    for lilyscore in os.listdir(tmp_dir):
+        if outformat == 'source':
+            shutil.copy2(lilyscore, dest_dir)
+        else:
+            filebase, _ = os.path.splitext(lilyscore)
+            lilypdf = "{}.{}".format(filebase, 'pdf')
+            lily_cmd = [lilypond_executable, '-dcrop', lilyscore]
+            lily_cmd_out = filebase + '.cropped.pdf'
+            _verbose("converting {} to {}".format(lilyscore, lilypdf))
+            _debug("lilypond conversion {}".format(lily_cmd))
+            subprocess.call(lily_cmd, stdout=devnull, stderr=subprocess.STDOUT)
+            shutil.move(lily_cmd_out, "{}.{}".format(filebase, 'pdf'))
+            if outformat in ['pdf', 'all']:
+                shutil.copy2(lilypdf, dest_dir)
+            if outformat in ['png', 'all']:
+                lilypng = "{}.{}".format(filebase, 'png')
+                png_cmd = [lilypond_executable, '--png', lilyscore]
+                subprocess.call(png_cmd)
+                shutil.copy2(lilypng, dest_dir)
+            if outformat in ['svg', 'all']:
+                pdfsvg_executable = get_executable(config, 'pdfsvg')
+                lilysvg = "{}.{}".format(filebase, 'svg')
+                svg_cmd = [pdfsvg_executable, lilypdf, lilysvg]
+                subprocess.call(svg_cmd)
+                shutil.copy2(lilysvg, dest_dir)
+            if outformat in ['eps', 'all']:
+                lilyeps = "{}.{}".format(filebase, 'eps')
+                eps_cmd = [lilypond_executable, '--eps', lilyscore]
+                subprocess.call(eps_cmd)
+                shutil.copy2(lilyeps, dest_dir)
 
 def asymptote_conversion(xml_source, xmlid_root, dest_dir, outformat):
     global config
@@ -143,7 +200,6 @@ def asymptote_conversion(xml_source, xmlid_root, dest_dir, outformat):
             # Sometimes Asymptotes SVGs include multiple PNGs for colored regions
             for f in glob.glob(asypng):
                 shutil.copy2(f, dest_dir)
-
 
 def sage_conversion(xml_source, xmlid_root, dest_dir, outformat):
     global config
@@ -1314,6 +1370,7 @@ def get_cli_arguments():
         ('youtube', 'Thumbnails for YouTube videos (JPEG only)'),
         ('preview', 'Static preview images for interactives'),
         ('mom', 'MyOpenMath problem files, static versions'),
+        ('lilypond', 'Lilypond scores'),
         ('all', 'Complete document (only SageNB format)'),
         ('tikz', 'tikz pictures (obsolete)'),
     ]
@@ -1533,6 +1590,11 @@ elif args.component == 'preview':
     preview_images(args.xml_file, args.xmlid, output_dir)
 elif args.component == 'mom':
     mom_static_problems(args.xml_file, args.xmlid, output_dir)
+elif args.component == 'lilypond':
+    if args.format in ['pdf', 'png', 'svg', 'eps', 'all', 'source']:
+        lilypond_conversion(args.xml_file, args.xmlid, output_dir, args.format)
+    else:
+        raise NotImplementedError('cannot make Lilypond pictures in "{}" format'.format(args.format))
 elif args.component == 'all':
     if args.format == 'sagenb':
         # initialize  the converter
