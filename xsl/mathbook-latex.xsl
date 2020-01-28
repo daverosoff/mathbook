@@ -8786,14 +8786,14 @@ along with MathBook XML.  If not, see <http://www.gnu.org/licenses/>.
 <!-- Clean indentation, drop into LaTeX               -->
 <!-- See "latex-image-preamble" for critical parts    -->
 <!-- Side-By-Side scaling happens there, could be here -->
-<xsl:template match="image[latex-image-code]|image[latex-image]" mode="image-inclusion">
+<xsl:template match="image[latex-image-code]|image[latex-image]|image[lilypond]" mode="image-inclusion">
     <!-- tikz images go into a tcolorbox where \linewidth is reset. -->
     <!-- grouping reins in the scope of any local graphics settings -->
     <!-- we resize what tikz produces, to fill a containing box     -->
     <!-- changes to accomodate resizing to fit requested layouts -->
     <xsl:text>\resizebox{\linewidth}{!}{%&#xa;</xsl:text>
     <xsl:call-template name="sanitize-text">
-        <xsl:with-param name="text" select="latex-image-code|latex-image" />
+        <xsl:with-param name="text" select="latex-image-code|latex-image|lilypond" />
     </xsl:call-template>
     <xsl:text>}%&#xa;</xsl:text>
 </xsl:template>
