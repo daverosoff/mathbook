@@ -299,6 +299,80 @@ def latex_image_conversion(xml_source, pub_file, stringparams, xmlid_root, data_
                 subprocess.call(eps_cmd)
                 shutil.copy2(latex_image_eps, dest_dir)
 
+def lilypond_conversion(xml_source, pub_file, stringparams, dest_dir, outformat):
+    ## global config
+    import tempfile, os, os.path, subprocess, shutil
+    _verbose('converting lilypond scores from {} to {} graphics for placement in {}'.format(xml_source, outformat, dest_dir))
+    ## dest_dir = sanitize_directory(dest_dir)
+    ## tmp_dir = tempfile.mkdtemp()
+    ## plat = get_platform()
+    ## if plat == "Windows":
+    ##     dest_dir = break_windows_path(dest_dir)
+    ##     tmp_dir = break_windows_path(tmp_dir)
+    devnull = open(os.devnull, 'w')
+    tmp_dir = get_temporary_directory()
+    _debug("temporary directory for lilypond conversion: {}".format(tmp_dir))
+    ptx_xsl_dir = get_ptx_xsl_path()
+    _verbose("extracting lilypond scores from {}".format(xml_source))
+    # support publisher file, not subtree argument
+    if pub_file:
+        stringparams['publisher'] = pub_file
+    _verbose('string parameters passed to extraction stylesheet: {}'.format(stringparams))
+    extraction_xslt = os.path.join(ptx_xsl_dir, 'extract-lilypond.xsl')
+    ## xslt_executable = get_executable(config, 'xslt')
+    ## _debug("xslt executable: {}".format(xslt_executable))
+    xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
+    ## extract_cmd = [xslt_executable,
+    ##     '--stringparam', 'scratch', tmp_dir,
+    ##     '--stringparam', 'subtree', xmlid_root,
+    ##     '--xinclude',
+    ##     os.path.join(mbx_xsl_dir, 'extract-lilypond.xsl'),
+    ##     xml_source
+    ##     ]
+    ## _verbose("extracting Lilypond scores from {}".format(xml_source))
+    ## subprocess.call(extract_cmd)
+    cwd = os.getcwd()
+    os.chdir(tmp_dir)
+    ## devnull = open(os.devnull, 'w')
+    files = [f for f in os.listdir(tmp_dir) if os.path.isfile(f)]
+    for lilyscore in files:
+        if outformat == 'source':
+            shutil.copy2(lilyscore, dest_dir)
+            _verbose("copying {} to {}".format(lilyscore, dest_dir))
+        else:
+            filebase, _ = os.path.splitext(lilyscore)
+            lilyscore_pdf = "{}.pdf".format(filebase)
+            lilyscore_svg = "{}.svg".format(filebase)
+            lilyscore_png = "{}.png".format(filebase)
+            lilyscore_eps = "{}.eps".format(filebase)
+            lilypond_executable = get_executable('lilypond')
+            _debug("lilypond executable: {}".format(lilypond_executable))
+            # Will it work?
+            lily_cmd = [lilypond_executable, '-dcrop', lilyscore]
+            lily_cmd_out = filebase + '.cropped.pdf'
+            _verbose("converting {} to {}".format(lilyscore, lilyscore_pdf))
+            _debug("lilypond conversion {}".format(lily_cmd))
+            subprocess.call(lily_cmd, stdout=devnull, stderr=subprocess.STDOUT)
+            shutil.copy2(lily_cmd_out, lilyscore_pdf)
+            if outformat in ['pdf', 'all']:
+                shutil.copy2(lilyscore_pdf, dest_dir)
+            if outformat in ['svg', 'all']:
+                pdfsvg_executable = get_executable('pdfsvg')
+                lilysvg = "{}.svg".format(filebase)
+                svg_cmd = [pdfsvg_executable, lilyscore_pdf, lilyscore_svg]
+                subprocess.call(svg_cmd)
+                shutil.copy2(lilysvg, dest_dir)
+            if outformat in ['png', 'all']:
+                lilypng = "{}.png".format(filebase)
+                png_cmd = [lilypond_executable, '--png', lilyscore]
+                subprocess.call(png_cmd)
+                shutil.copy2(lilyscore_png, dest_dir)
+            if outformat in ['eps', 'all']:
+                lilyeps = "{}.eps".format(filebase)
+                eps_cmd = [lilypond_executable, '--eps', lilyscore]
+                subprocess.call(eps_cmd)
+                shutil.copy2(lilyscore_eps, dest_dir)
+
 ################################
 #
 #  WeBWorK Extraction Processing
@@ -1182,7 +1256,7 @@ def epub(xml_source, pub_file, out_file, dest_dir, math_format):
     _debug(msg.format(xml_source, math_format, math_representations))
     mathjax_latex(xml_source, pub_file, math_representations, None, math_format)
 
-    # Build necessary content and infrastructure EPUB files, 
+    # Build necessary content and infrastructure EPUB files,
     # using SVG images of math.  Most output goes into the
     # EPUB/xhtml directory via exsl:document templates in
     # the EPUB XSL conversion.  The stylesheet does record,
@@ -1220,9 +1294,9 @@ def epub(xml_source, pub_file, out_file, dest_dir, math_format):
     # bits of info necessary for packaging
     packaging_tree = ET.parse(packaging_file)
 
-    # Stage CSS files in EPUB/css, coordinate 
+    # Stage CSS files in EPUB/css, coordinate
     # with names in manifest and *.xhtml via XSL.
-    # CSS files live in distribution in "css" directory, 
+    # CSS files live in distribution in "css" directory,
     # which is a peer of the "xsl" directory
     # EPUB exists from above xsltproc call
     css_dir = os.path.join(tmp_dir, 'EPUB', 'css')
